@@ -6,11 +6,10 @@ numpy
 python-multipart
 requests
 posthog<3.5.0
-langchain 
-langchain-community 
-langchain-openai 
-langchain-chroma 
+langchain
+langchain-community
+langchain-openai
+langchain-chroma
 langchain-huggingface
 numpy<2.0
 python-dotenv
-streamlit

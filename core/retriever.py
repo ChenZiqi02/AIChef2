@@ -69,7 +69,7 @@ class VectorDBManager:
 #     return filtered_results
 # ... (前面的引用不变)
 
-def retrieve_docs(query: str, top_k: int = 4, score_threshold: float = 0.8):
+def retrieve_docs(query: str, top_k: int = 4, score_threshold: float = 1.0):
     """
     检索核心函数
     """
@@ -82,8 +82,11 @@ def retrieve_docs(query: str, top_k: int = 4, score_threshold: float = 0.8):
     
     # 格式化结果
     filtered_results = []
+    print(f"🔎 [Retriever] 检索到 {len(results)} 条，阈值: {score_threshold}")
+    
     for doc, score in results:
-        # 过滤掉不太相关的结果
+        print(f"   - {doc.metadata.get('name')} (Score: {score:.4f})")
+        # 恢复正常的阈值过滤
         if score <= score_threshold:
             filtered_results.append({
                 "id": doc.metadata.get('id', ''),          # 建议加上 ID

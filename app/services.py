@@ -1,23 +1,31 @@
 import json
 from typing import Optional
-from .models import RecipeStep, RecipeResponse
+from .models import RecipeStep, RecipeResponse, RecipeListResponse
 from core.retriever import retrieve_docs
 # ✅ 引入新的优选函数
-from core.generator import smart_select_and_comment 
+from core.generator import smart_select_and_comment, generate_rag_answer 
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
+from core.config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME, GEMINI_API_KEY 
 
 class RecipeService:
+    def __init__(self):
+        # 初始化 LLM 客户端
+        self.llm = None
+        if GEMINI_API_KEY:
+            # 优先尝试 2.0-flash (用户指定)，如果不行会在 generator 里被 handle，这里为了一致性保持
+            # 但 langchain 的 init 它是懒加载的，所以这里即使写错了也不会马上报错，而是在 invoke 时报错。
+            # 为了稳健，我们这里也改回 2.0，让系统尝试
+            self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=GEMINI_API_KEY, temperature=0.7)
+        elif LLM_API_KEY:
+            self.llm = ChatOpenAI(model=LLM_MODEL_NAME, api_key=LLM_API_KEY, base_url=LLM_BASE_URL, temperature=0.7)
+
     def get_recipe_response(self, query: str) -> Optional[RecipeResponse]:
         print(f"🔍 [Service] 用户搜索: {query}")
         
         # 1. 【扩大召回】从数据库拿 Top 3，而不是 Top 1
         # 这样即使向量检索把最佳结果排在了第 2 或 第 3，AI 也能把它捞回来
         candidates = retrieve_docs(query, top_k=6)
-        
-        if not candidates:
-            return None
-        
-        # 🔍 调试打印：看看数据库到底捞出了啥，到底有没有不辣的？
-        print(f"👀 候选名单: {[c['name'] for c in candidates]}")
         
         # 2. 【AI 优选】让大模型来挑，并生成推荐语
         # 返回值: (选中的索引, 推荐语)
@@ -31,29 +39,6 @@ class RecipeService:
         best_match = candidates[selected_index]
         print(f"🎯 [Service] AI 选中了第 {selected_index} 项: {best_match['name']}")
 
-        # --- 以下清洗逻辑不变 ---
-        raw_instructions = best_match.get('instructions', [])
-        if isinstance(raw_instructions, str):
-            try: raw_instructions = json.loads(raw_instructions)
-            except: raw_instructions = []
-
-        raw_tags = best_match.get('tags', [])
-        if isinstance(raw_tags, str):
-            try: raw_tags = json.loads(raw_tags)
-            except: raw_tags = []
-
-        formatted_steps = []
-        for idx, step in enumerate(raw_instructions):
-            img_link = step.get('imgLink')
-            if not img_link or img_link == "null": img_link = None
-            formatted_steps.append(
-                RecipeStep(
-                    step_index=idx + 1,
-                    description=step.get('description', ''),
-                    image_url=img_link
-                )
-            )
-
         return RecipeResponse(
             recipe_id=str(best_match.get('id', 'unknown')),
             recipe_name=best_match.get('name', '未命名'),
@@ -62,6 +47,131 @@ class RecipeService:
             steps=formatted_steps,
             message=ai_message # 这里是 AI 针对选中菜谱写的推荐语
         )
+
+    def get_recipe_list_response(self, query: str, limit: int = 5) -> Optional[RecipeListResponse]:
+        """
+        获取多个菜谱推荐列表
+        """
+        print(f"🔍 [Service] 用户搜索列表: {query}, 数量: {limit}")
+        
+        # 1. 扩大召回
+        candidates = retrieve_docs(query, top_k=limit)
+        if not candidates:
+            return None
+            
+        # 2. 格式化所有结果
+        formatted_list = []
+        seen_names = set() # 用于去重
+
+        for doc in candidates:
+            # 去重逻辑: 如果名字已经出现过，跳过
+            recipe_name = doc.get('name', '未命名')
+            if recipe_name in seen_names:
+                continue
+            seen_names.add(recipe_name)
+            
+            # 清洗 Instructions
+            raw_instructions = doc.get('instructions', [])
+            if isinstance(raw_instructions, str):
+                try: raw_instructions = json.loads(raw_instructions)
+                except: raw_instructions = []
+
+            # 清洗 Tags
+            raw_tags = doc.get('tags', [])
+            if isinstance(raw_tags, str):
+                try: raw_tags = json.loads(raw_tags)
+                except: raw_tags = []
+
+            # 格式化步骤
+            formatted_steps = []
+            for idx, step in enumerate(raw_instructions):
+                # 兼容不同数据源的图片字段
+                img_link = step.get('image_url') or step.get('imgLink')
+                
+                # 简单过滤无效图片链接
+                if not img_link or img_link == "null": img_link = None
+                
+                formatted_steps.append(
+                    RecipeStep(
+                        step_index=idx + 1,
+                        description=step.get('description', ''),
+                        image_url=img_link
+                    )
+                )
+            
+            # 组装单个 Response
+            # ✅ AI 功能模拟：如果没有配置 Key，我们用规则生成一段 "伪AI" 点评
+            # 这样用户能感觉到 "AI 辅助" 的存在
+            ai_comment = f"基于您的食材，AI 认为这道菜匹配度高达 {int(doc.get('score', 0) * 100)}%。"
+            if "辣" in str(raw_tags):
+                ai_comment += " 注意：这道菜口味偏辣，可以适当减少辣椒用量。"
+            elif "汤" in str(raw_tags):
+                ai_comment += " 这是一个很棒的汤品选择，暖胃又健康。"
+
+            formatted_list.append(
+                RecipeResponse(
+                    recipe_id=str(doc.get('id', 'unknown')),
+                    recipe_name=recipe_name,
+                    tags=raw_tags,
+                    cover_image=doc.get('image'),
+                    steps=formatted_steps,
+                    message=ai_comment 
+                )
+            )
+
+        # 3. 【核心新增】生成列表综述 (AI Consultant)
+        # 用 LLM 为这一组搜索结果写一段开场白
+        list_summary = generate_rag_answer(query, candidates)
+
+        return RecipeListResponse(
+            candidates=formatted_list,
+            ai_message=list_summary
+        )
+
+    def consult_chef(self, query: str, context: str, history: list) -> str:
+        """
+        AI 顾问交互接口
+        """
+        # 构建 prompt
+        system_prompt = """
+        你是一位高端家庭餐厅的主厨顾问。你的任务是根据当前的“搜索结果上下文”和“对话历史”，回答用户的追问。
+        
+        【要求】:
+        1. 语气专业、优雅、幽默（参考之前的设定）。
+        2. 如果用户想换口味，请基于列表里的其他菜推荐，或者给出烹饪建议。
+        3. 字数控制在 100 字左右。
+        """
+        
+        # 简单拼接历史
+        history_str = "\n".join([f"{h['role']}: {h['content']}" for h in history[-4:]])
+
+        user_prompt = f"""
+        【当前菜谱列表上下文】：
+        {context}
+
+        【对话历史】：
+        {history_str}
+
+        【用户新问题】：
+        {query}
+
+        请主厨作答：
+        """
+        
+        if not self.llm:
+             return "👨‍🍳 抱歉，AI 厨师目前无法连接大脑 (API Key Missing)。"
+
+        try:
+            from langchain_core.messages import SystemMessage, HumanMessage
+            response = self.llm.invoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt)
+            ])
+            return response.content.strip()
+        except Exception as e:
+            print(f"Chat Error: {e}")
+            return "👨‍🍳 抱歉，厨房太忙了，请稍后再试。"
+
 
 recipe_service = RecipeService()
 

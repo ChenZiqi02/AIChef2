@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # 引入我们定义好的模型和服务
-from .models import QueryRequest, RecipeResponse
+from .models import QueryRequest, RecipeResponse, RecipeListResponse, ConsultRequest
 from .services import recipe_service
 
 # 初始化 APP
@@ -28,27 +28,37 @@ def health_check():
     """健康检查接口"""
     return {"status": "ok", "message": "AIChef API is running!"}
 
-@app.post("/api/search", response_model=RecipeResponse)
+@app.post("/api/search", response_model=RecipeListResponse)
 async def search_recipe(request: QueryRequest):
     """
-    🔍 核心搜索接口
-    前端发送: { "query": "红烧肉" }
-    后端返回: 包含步骤图的完整 JSON
+    🔍 核心搜索接口 - 支持返回列表
     """
     if not request.query.strip():
         raise HTTPException(status_code=400, detail="搜索词不能为空")
 
     # 调用 Service 层
-    result = recipe_service.get_recipe_response(request.query)
+    # 注意：为了兼容旧代码，我们先看看 service 能不能返回列表
+    result = recipe_service.get_recipe_list_response(request.query, request.limit)
     
     # 404 处理
-    if not result:
+    if not result or not result.candidates:
         raise HTTPException(
             status_code=404, 
             detail=f"抱歉，暂未收录关于“{request.query}”的菜谱，请尝试其他关键词。"
         )
     
     return result
+
+@app.post("/api/consult")
+async def consult_chef_api(request: ConsultRequest):
+    """
+    AI 厨师交互接口
+    """
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="问题不能为空")
+
+    reply = recipe_service.consult_chef(request.query, request.context, request.history)
+    return {"reply": reply}
 
 # 仅用于直接调试 main.py 时使用
 # 实际建议在根目录用 run.py 启动

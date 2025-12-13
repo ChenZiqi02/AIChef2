@@ -5,10 +5,10 @@ import torch
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from core.config import DB_PATH_V3, EMBEDDING_MODEL_NAME
+from core.config import DB_PATH_V3, EMBEDDING_MODEL_NAME, COLLECTION_NAME
 
 # 1. 配置路径
-SOURCE_FILE = "data/rag_ready_final.json"
+SOURCE_FILE = "data/recipe_rag_ready_fixed.json"
 
 def ingest_data():
     # 检查源文件
@@ -75,7 +75,7 @@ def ingest_data():
         documents=documents,
         embedding=embeddings,
         persist_directory=DB_PATH_V3,
-        collection_name="recipe_collection_v3"
+        collection_name=COLLECTION_NAME
     )
     
     print("✅ 入库完成！复杂数据已序列化存储。")

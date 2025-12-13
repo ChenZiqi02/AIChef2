@@ -17,12 +17,12 @@ Users simply input the ingredients currently available in their fridge (e.g., *"
 * **🥗 Smart Ingredient Matching**: Uses semantic search to understand ingredients (e.g., suggesting chicken if pork is missing).
 * **💡 Adaptive Cooking Instructions**: The AI doesn't just copy-paste recipes; it intelligently modifies steps based on what you actually have.
 * **⚡ Fast Local Retrieval**: Built on ChromaDB and BAAI Embeddings for millisecond-level response times.
-* **💬 Interactive UI**: A clean, chat-based interface built with Streamlit, featuring streaming responses and recipe citations.
+* **💬 Interactive UI**: A clean, chat-based interface built with React, featuring streaming responses and recipe citations.
 * **🔌 Flexible LLM Support**: Compatible with any OpenAI-style API (SiliconFlow Qwen, DeepSeek, Google Gemini, etc.).
 
 ## 🛠 Tech Stack
 
-* **Frontend**: Streamlit, React, Node, HTML
+* **Frontend**: React, Node, HTML
 * **Backend Logic**: Python, LangChain
 * **Vector Database**: ChromaDB, FAISS
 * **Embedding Model**: BAAI/bge-small-zh-v1.5 (HuggingFace)
@@ -35,16 +35,46 @@ Users simply input the ingredients currently available in their fridge (e.g., *"
 Ensure you have Python 3.10+ installed.
 
 ```bash
-# Clone the repository
-git clone [https://github.com/your-username/AIChef.git](https://github.com/your-username/AIChef.git)
-cd AIChef
+### 2. Configuration
 
-# Create and activate a virtual environment (Recommended)
-python -m venv .venv
-source .venv/bin/activate  # Mac/Linux
-.venv\Scripts\activate   # Windows
+Create a `.env` file in the root directory:
 
-# Install dependencies
-pip install -r requirements.txt
-# or using uv
-uv add requirements.txt
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+### 3. Startup (Two Terminals)
+
+**Terminal 1: Start Backend**
+```bash
+python run.py
+# Server starts at http://127.0.0.1:8000
+```
+
+**Terminal 2: Start Frontend**
+```bash
+cd frontend
+npm install  # First time only
+npm run dev
+# App opens at http://127.0.0.1:5173
+```
+
+## 🎮 How to Use
+
+1.  **Open the App**: Visit `http://127.0.0.1:5173` in your browser.
+2.  **Home Page**: Admire the fine dining aesthetic. Enter ingredients (e.g., "Tomato, Egg") in the search bar or click a category icon.
+3.  **Consultant**: Click "Consult". The AI will analyze your ingredients.
+4.  **Results & Chat**: 
+    - You will see a list of curated recipes.
+    - **AI Consultant**: At the top, the AI (Gemini 2.0) will give a humorous, personalized recommendation.
+    - **Interactive Chat**: Type in the chat box to ask follow-up questions (e.g., "I don't eat spicy food", "How do I prep the shrimp?").
+5.  **View Details**: Click any recipe card to see step-by-step instructions.
+6.  **My Collection**: Click the "Heart" icon on any recipe to save it to your favorites.
+
+## 📝 Troubleshooting
+
+- **429 Resource Exhausted**: The system will automatically retry or you can wait a moment. (We prioritize the smarter Gemini 2.0 model).
+- **Blank Page**: Ensure you are running the frontend on `localhost` (127.0.0.1) to avoid CORS issues.
+
+---
+*Bon Appétit!* 👨‍🍳

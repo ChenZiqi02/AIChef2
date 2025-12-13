@@ -4,6 +4,7 @@ from typing import List, Optional
 # --- 请求模型 ---
 class QueryRequest(BaseModel):
     query: str
+    limit: int = 5
 
 # --- 响应模型 (完全对应前端 UI) ---
 
@@ -20,3 +21,15 @@ class RecipeResponse(BaseModel):
     cover_image: Optional[str]
     steps: List[RecipeStep]
     message: str
+
+class RecipeListResponse(BaseModel):
+    candidates: List[RecipeResponse]
+    ai_message: Optional[str] = None
+
+class ConsultRequest(BaseModel):
+    query: str
+    context: str
+    history: List[dict] # [{"role": "user", "content": "..."}]
+
+class ConsultResponse(BaseModel):
+    reply: str
