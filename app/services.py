@@ -4,20 +4,14 @@ from .models import RecipeStep, RecipeResponse, RecipeListResponse
 from core.retriever import retrieve_docs
 # ✅ 引入新的优选函数
 from core.generator import smart_select_and_comment, generate_rag_answer 
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from core.config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME, GEMINI_API_KEY 
+from core.config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME
 
 class RecipeService:
     def __init__(self):
         # 初始化 LLM 客户端
         self.llm = None
-        if GEMINI_API_KEY:
-            # 优先尝试 2.0-flash (用户指定)，如果不行会在 generator 里被 handle，这里为了一致性保持
-            # 但 langchain 的 init 它是懒加载的，所以这里即使写错了也不会马上报错，而是在 invoke 时报错。
-            # 为了稳健，我们这里也改回 2.0，让系统尝试
-            self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=GEMINI_API_KEY, temperature=0.7)
-        elif LLM_API_KEY:
+        if LLM_API_KEY:
             self.llm = ChatOpenAI(model=LLM_MODEL_NAME, api_key=LLM_API_KEY, base_url=LLM_BASE_URL, temperature=0.7)
 
     def get_recipe_response(self, query: str) -> Optional[RecipeResponse]:

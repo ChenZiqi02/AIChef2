@@ -1,49 +1,40 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from core.config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME, GEMINI_API_KEY
+from core.config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME
 import re
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+import ast
 
 # 初始化客户端 (使用 LangChain 统一接口)
 llm = None
 
-if GEMINI_API_KEY:
-    print(f"✅ 尝试使用 Google Gemini API (model: gemini-2.0-flash)")
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash",
-        google_api_key=GEMINI_API_KEY,
-        temperature=0.7,
-        safety_settings={
-            "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
-            "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
-            "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
-            "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
-        }
-    )
-elif LLM_API_KEY:
-    print(f"✅ 使用 SiliconFlow API (model: {LLM_MODEL_NAME})")
+# 1. 优先检查 SiliconFlow / DeepSeek (OpenAI 兼容接口)
+if LLM_API_KEY:
+    print(f"✅ 使用 SiliconFlow/DeepSeek API (model: {LLM_MODEL_NAME})")
     llm = ChatOpenAI(
         model=LLM_MODEL_NAME,
         api_key=LLM_API_KEY,
         base_url=LLM_BASE_URL,
-        temperature=0.4
+        temperature=0.7
     )
+else:
+    print("⚠️ 未配置 SiliconFlow API Key，生成功能将不可用。")
+
+class MockResponse:
+    def __init__(self, content):
+        self.content = content
 
 def safe_invoke(messages):
     """
-    统一的 LLM 调用封装 (Strict Single Model: Gemini 2.0 Flash)
-    用户指令: 不需要降级保底，只要原来的幽默效果。
+    统一的 LLM 调用封装
     """
     if not llm:
-        raise Exception("LLM Client not initialized")
+        return MockResponse("🤖 (未配置 API Key，请查看下方菜谱)")
 
     try:
-        # 直接调用首选模型 (允许默认重试)
+        # 直接调用配置好的 LLM
         return llm.invoke(messages)
     except Exception as e:
-        print(f"❌ [SafeInvoke] Model Failed: {e}")
-        # 直接抛出错误，不切换模型
-        raise e
+        print(f"❌ [SafeInvoke] LLM 调用失败: {e}")
+        return MockResponse("🤖 (AI 服务暂时不可用，请检查 API Key 或网络)")
 
 def smart_select_and_comment(query: str, candidates: list):
     """
@@ -70,14 +61,18 @@ def smart_select_and_comment(query: str, candidates: list):
     # ✅ 优化后的 Prompt：更像一个懂得变通的大厨
     # =====================================================
     system_prompt = """
-    你是一位聪明、懂变通的私家大厨。你的任务是从给定的候选菜谱中，为用户推荐**最合适**的一道。
+    你是一位聪明、幽默且懂变通的私家大厨。你的任务是从给定的候选菜谱中，为用户推荐**最合适**的一道。
 
     【推荐逻辑】：
     1. **找最大公约数**：优先选择食材、口味最接近用户需求的菜。
-    2. **灵活处理忌口**：
+    2. **幽默处理离谱搭配**：
+       - 如果用户给出了离谱的搭配（例如“西瓜炒牛肉”、“巧克力炖蒜”），请**不要**强行推荐这道菜（如果有的话）。
+       - 请用**幽默**的语气吐槽这个搭配，并给出一个**合理的烹饪理由**来排除它。
+       - 例如：“虽然我有‘西瓜炒肉’的谱子，但为了您的肠胃安全，我强烈建议我们还是吃‘凉拌西瓜皮’如果是想吃瓜的话，或者‘小炒黄牛肉’如果是想吃肉的话。毕竟强扭的瓜不甜，强炒的肉...可能不仅不甜还很怪。”
+    3. **灵活处理忌口**：
        - 如果用户说“不要辣”，尽量选不辣的。
        - **关键点**：如果候选项全都有辣，**不要拒绝回答！** 请选一个最容易“去辣”的菜（比如把辣椒油换成香油），并在理由里告诉用户怎么调整。
-    3. **不仅是选择，更是建议**：推荐理由要告诉用户“为什么选它”或者“怎么做更符合你的要求”。
+    4. **不仅是选择，更是建议**：推荐理由要告诉用户“为什么选它”或者“怎么做更符合你的要求”。
 
     【输出格式】：
     请直接返回一行：索引数字 ||| 推荐理由
@@ -161,17 +156,18 @@ def generate_rag_answer(query: str, candidates: list) -> str:
         candidates_summary += f"- {doc.get('name')} (标签: {doc.get('tags')})\n"
 
     system_prompt = """
-    你是一位高端家庭餐厅的主厨顾问。
+    你是一位高端家庭餐厅的主厨顾问，性格幽默风趣，擅长用专业的烹饪知识来点评食材。
     用户的需求可能只是几个食材名。你的任务是根据搜索到的菜谱列表，给用户一段**专业、优雅且得体**的开场建议。
     
     【推荐逻辑】：
-    1.  **语气专业**：礼貌、温和、有质感（例如："为您精选了以下几道佳肴..."）。拒绝调侃或过度热情。
+    1.  **语气专业且幽默**：在保持专业度的同时，加入适度的幽默感。
     2.  **总结亮点**：概括菜品特色，体现烹饪的艺术感。
     3.  **给出建议**：简要提及食材搭配或风味特点。
-    4.  **幽默与互动（最高优先级）**：
-        - **必须检查**：无论是否搜到了菜谱，先检查用户的输入里有没有**奇怪、离谱或调侃**的词（如“屎”、“毒药”、“混凝土”等）。
-        - **混合输入处理**：如果用户输入了“巧克力和屎”，虽然有巧克力菜谱，但你**必须**先吐槽“屎”这个离谱的食材，然后再推荐巧克力！
-        - **例子**：“巧克力我懂，但‘屎’是什么黑暗料理？😱 为了您的生命安全，我还是只给您推荐正常的【巧克力做】法吧...”
+    4.  **幽默排雷（最高优先级）**：
+        - **必须检查**：无论是否搜到了菜谱，先检查用户的输入里有没有**奇怪、离谱或调侃**的词（如“屎”、“毒药”、“混凝土”等）或者**黑暗料理搭配**（如“板蓝根泡面”、“西瓜炒肉”）。
+        - **混合输入处理**：如果用户输入了“巧克力和蒜”，虽然可能有巧克力菜谱，但你**必须**先吐槽“蒜”在这个组合里的突兀，然后再推荐正常的菜谱！
+        - **合理理由**：给出排除理由时要基于烹饪原理或常识（例如：“大蒜的辛辣与巧克力的醇厚实在难以调和”，“高温会破坏西瓜清爽的口感”）。
+        - **例子**：“巧克力我懂，但这大蒜...除非您想尝试‘吸血鬼退散’风味，否则我建议还是让大蒜去陪排骨吧。我也为您准备了几道正常的巧克力甜点...”
         - **拒绝无视**：绝对不能假装没看见离谱词只回答正常的，那样太呆板了！
     5.  **形式要求**：严禁使用 Emoji 表情符号。字数控制在 100 字以内。
     

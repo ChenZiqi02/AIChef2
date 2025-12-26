@@ -24,8 +24,8 @@ LLM_API_KEY = os.getenv("SILICONFLOW_API_KEY")
 LLM_BASE_URL = os.getenv("SILICONFLOW_BASE_URL")
 LLM_MODEL_NAME = os.getenv("SILICONFLOW_MODEL_NAME")
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
 
 # 简单检查
-if not LLM_API_KEY and not GEMINI_API_KEY:
-    print("⚠️ 警告: 未检测到 LLM 配置 (SiliconFlow 或 Gemini)，生成功能将无法使用。")
+if not LLM_API_KEY:
+    print("⚠️ 警告: 未检测到 SiliconFlow API 配置，生成功能将无法使用。")

@@ -1,7 +1,7 @@
 # AIChef Technical Architecture
 
 ## 1. Project Overview
-**AIChef** is an intelligent recipe recommendation system that uses RAG (Retrieval-Augmented Generation) to turn simple ingredient lists into gourmet recipe suggestions. It features a "Fine Dining" aesthetic and a humorous, interactive AI consultant.
+**AIChef** is an intelligent recipe recommendation system that uses RAG (Retrieval-Augmented Generation) to turn simple ingredient lists into gourmet recipe suggestions. It features a "Fine Dining" aesthetic and a **humorous, interactive AI Chef Consultant**.
 
 ## 2. Tech Stack
 
@@ -19,19 +19,19 @@
 - **API Style**: RESTful JSON API
 
 ### AI & Data
-- **LLM**: Google Gemini 2.0 Flash (Strict Mode, High Intelligence)
-  - **Safety**: `BLOCK_NONE` (Uncensored for creative flexibility)
-  - **Strategy**: Direct Invocation (No Fallback, Patient Retry)
+- **LLM**: **SiliconFlow / DeepSeek** (via OpenAI-compatible API)
+  - **Model**: `deepseek-ai/DeepSeek-R1-0528-Qwen3-8B` (Logic Enhanced)
+  - **Personality**: Humorous, professional, validates "dark cuisine" (e.g., rejecting Watermelon + Beef with logic).
 - **Vector Database**: ChromaDB (Persistent storage in `data/chroma_db_v3`)
 - **Embeddings**: Sentence-Transformers (`paraphrase-multilingual-MiniLM-L12-v2`)
-- **Orchestration**: LangChain (Google GenAI integration)
+- **Orchestration**: LangChain (OpenAI integration)
 
 ## 3. Key Features
 
 ### Intelligent Search (RAG)
 1.  **Retrieval**: Searches 10k+ local recipes using vector similarity.
-2.  **Rerank & Comment**: AI selects the best match and adds a humorous, personality-driven comment (e.g., roasting "weird" ingredients).
-3.  **Strict Quality**: Configured to use `gemini-2.0-flash` exclusively for maximum reasoning capability.
+2.  **Rerank & Comment**: AI selects the best match and adds a humorous, personality-driven comment.
+3.  **"Dark Cuisine" Filter**: The AI is prompted to humorously reject confusing or gross ingredient combinations (e.g., "Chocolate + Garlic") while offering safe alternatives.
 
 ### Interactive Consultant
 - **Chat Interface**: Users can ask follow-up questions ("Can I make this spicy?", "I don't have an oven").
@@ -67,6 +67,6 @@ AIChef/
 ```
 
 ## 5. Development Workflow
-- **Backend**: `python run.py` (Port 8000)
-- **Frontend**: `cd frontend && npm run dev` (Port 5173)
-- **Env**: Requires `GEMINI_API_KEY` in `.env`.
+- **Backend**: `python AIChef/run.py` (Port 8000)
+- **Frontend**: `cd AIChef/frontend && npm run dev` (Port 5173)
+- **Env**: Requires `SILICONFLOW_API_KEY`, `SILICONFLOW_BASE_URL` in `.env`.
