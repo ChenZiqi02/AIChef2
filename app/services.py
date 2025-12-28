@@ -1,4 +1,5 @@
 import json
+import difflib
 from typing import Optional
 from .models import RecipeStep, RecipeResponse, RecipeListResponse
 from core.retriever import retrieve_docs
@@ -42,35 +43,98 @@ class RecipeService:
             message=ai_message # 这里是 AI 针对选中菜谱写的推荐语
         )
 
-    def get_recipe_list_response(self, query: str, limit: int = 5) -> Optional[RecipeListResponse]:
+    def _optimize_query(self, query: str, refinement: str) -> str:
         """
-        获取多个菜谱推荐列表
+        利用 LLM 根据用户反馈优化搜索词
         """
-        print(f"🔍 [Service] 用户搜索列表: {query}, 数量: {limit}")
-        
-        # 1. 扩大召回
-        candidates = retrieve_docs(query, top_k=limit)
-        if not candidates:
-            return None
+        if not self.llm or not refinement:
+            return query
             
-        # 2. 格式化所有结果
+        system_prompt = """
+        你是一个搜索关键词优化助手。用户正在搜索菜谱，并给出了一些补充调整意见。
+        请根据用户的初始搜索词和补充意见，重写一个更精准的搜索关键词。
+        
+        【规则】
+        1. 输出**仅**包含新的搜索词，不要有任何解释。
+        2. 如果用户说“不要辣”，新词可以包含“清淡”或“不辣”。
+        3. 保持简短精炼。
+        """
+        
+        user_prompt = f"初始搜索词：{query}\n用户补充意见：{refinement}\n\n请重写搜索词："
+        
+        try:
+             from langchain_core.messages import SystemMessage, HumanMessage
+             response = self.llm.invoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt)
+             ])
+             new_query = response.content.strip()
+             print(f"🔄 [Service] 搜索词优化: '{query}' + '{refinement}' -> '{new_query}'")
+             return new_query
+        except Exception as e:
+            print(f"⚠️ Query optimization failed: {e}")
+            return query
+
+    def get_recipe_list_response(self, query: str, limit: int = 5, refinement: str = None) -> Optional[RecipeListResponse]:
+        """
+        获取多个菜谱推荐列表 (支持去重 + 上下文改进)
+        """
+        # 1. 如果有改进意见，先优化搜索词
+        search_query = query
+        if refinement:
+            search_query = self._optimize_query(query, refinement)
+            
+        print(f"🔍 [Service] 执行搜索: {search_query}, 目标数量: {limit}, 原始Query: {query}")
+        
+        # 2. 扩大召回 (为了去重，且保证数量够，我们取 3 倍)
+        candidates = retrieve_docs(search_query, top_k=limit * 3)
+        if not candidates:
+            # 如果优化后的词搜不到，尝试回退到原始词
+            if search_query != query:
+                print("⚠️ 优化后的词无结果，回退到原始搜索词...")
+                candidates = retrieve_docs(query, top_k=limit * 3)
+                
+            if not candidates:
+                return None
+            
+        # 3. 去重与格式化
         formatted_list = []
-        seen_names = set() # 用于去重
+        seen_names = [] # 存 (name, id) 用于比较
+
+        def is_similar(name1, name2):
+            # 简单去空格小写比较
+            n1 = name1.strip().lower()
+            n2 = name2.strip().lower()
+            if n1 == n2: return True
+            #由于菜谱名称往往较短，只要包含关系或相似度高都算重复
+            if n1 in n2 or n2 in n1: return True
+            return difflib.SequenceMatcher(None, n1, n2).ratio() > 0.8
 
         for doc in candidates:
-            # 去重逻辑: 如果名字已经出现过，跳过
+            # 如果已经够数了，停止处理
+            if len(formatted_list) >= limit:
+                break
+                
             recipe_name = doc.get('name', '未命名')
-            if recipe_name in seen_names:
-                continue
-            seen_names.add(recipe_name)
             
-            # 清洗 Instructions
+            # 检查重复
+            is_dup = False
+            for existing_name in seen_names:
+                if is_similar(recipe_name, existing_name):
+                    is_dup = True
+                    break
+            
+            if is_dup:
+                continue
+                
+            seen_names.append(recipe_name)
+            
+            # --- 数据清洗 (保持原有逻辑) ---
             raw_instructions = doc.get('instructions', [])
             if isinstance(raw_instructions, str):
                 try: raw_instructions = json.loads(raw_instructions)
                 except: raw_instructions = []
 
-            # 清洗 Tags
             raw_tags = doc.get('tags', [])
             if isinstance(raw_tags, str):
                 try: raw_tags = json.loads(raw_tags)
@@ -79,10 +143,7 @@ class RecipeService:
             # 格式化步骤
             formatted_steps = []
             for idx, step in enumerate(raw_instructions):
-                # 兼容不同数据源的图片字段
                 img_link = step.get('image_url') or step.get('imgLink')
-                
-                # 简单过滤无效图片链接
                 if not img_link or img_link == "null": img_link = None
                 
                 formatted_steps.append(
@@ -93,14 +154,10 @@ class RecipeService:
                     )
                 )
             
-            # 组装单个 Response
-            # ✅ AI 功能模拟：如果没有配置 Key，我们用规则生成一段 "伪AI" 点评
-            # 这样用户能感觉到 "AI 辅助" 的存在
-            ai_comment = f"基于您的食材，AI 认为这道菜匹配度高达 {int(doc.get('score', 0) * 100)}%。"
-            if "辣" in str(raw_tags):
-                ai_comment += " 注意：这道菜口味偏辣，可以适当减少辣椒用量。"
-            elif "汤" in str(raw_tags):
-                ai_comment += " 这是一个很棒的汤品选择，暖胃又健康。"
+            # 此处稍微调整得更有 AI 味一点
+            ai_comment = f"匹配度 {int(doc.get('score', 0) * 100)}%"
+            if refinement and "辣" in refinement and "辣" not in str(raw_tags):
+                 ai_comment += " | 已为您筛选不辣的做法"
 
             formatted_list.append(
                 RecipeResponse(
@@ -113,9 +170,15 @@ class RecipeService:
                 )
             )
 
-        # 3. 【核心新增】生成列表综述 (AI Consultant)
-        # 用 LLM 为这一组搜索结果写一段开场白
-        list_summary = generate_rag_answer(query, candidates)
+        # 4. 生成综述
+        # 注意：这里传给 summarizer 的是原始 query (或者组合 query)，让 AI 知道用户意图
+        user_intent = query
+        if refinement:
+            user_intent = f"{query} ({refinement})"
+            
+        list_summary = generate_rag_answer(user_intent, [
+            {'name': c.recipe_name, 'tags': c.tags} for c in formatted_list
+        ])
 
         return RecipeListResponse(
             candidates=formatted_list,

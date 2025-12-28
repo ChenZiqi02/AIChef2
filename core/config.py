@@ -22,7 +22,7 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 # 优先读取 SiliconFlow，如果没有则尝试读取 Gemini
 LLM_API_KEY = os.getenv("SILICONFLOW_API_KEY")
 LLM_BASE_URL = os.getenv("SILICONFLOW_BASE_URL")
-LLM_MODEL_NAME = os.getenv("SILICONFLOW_MODEL_NAME")
+LLM_MODEL_NAME = (os.getenv("SILICONFLOW_MODEL_NAME") or "").split("#")[0].strip()
 
 
 

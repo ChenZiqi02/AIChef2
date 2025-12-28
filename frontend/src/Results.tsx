@@ -27,21 +27,28 @@ const ResultsPage = () => {
         setChatInput('');
         setIsChatLoading(true);
 
-        // 2. Prepare context (summary of current recipes)
-        const context = recipes.map(r => `${r.recipe_name} (${r.tags.join(',')})`).join('\n');
-
         try {
-            const res = await axios.post('/api/consult', {
-                query: text,
-                context: context,
-                history: chatHistory // send previous history
+             // 2. Call Search API with Refinement
+             // We use the original 'query' from the URL, and use the chat text as 'refinement'
+             // This fulfills the user's request to "refresh recipes" based on chat input.
+            const res = await axios.post('/api/search', {
+                query: query,
+                limit: 5,
+                refinement: text
             });
 
-            // 3. Add AI response
-            setChatHistory(prev => [...prev, { role: 'assistant', content: res.data.reply }]);
+            // 3. Update Recipes
+            if (res.data.candidates && res.data.candidates.length > 0) {
+                setRecipes(res.data.candidates);
+            }
+
+            // 4. Add AI response to chat
+            const reply = res.data.ai_message || "Recipes updated based on your feedback.";
+            setChatHistory(prev => [...prev, { role: 'assistant', content: reply }]);
+            
         } catch (err) {
             console.error(err);
-            setChatHistory(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting to the kitchen right now." }]);
+            setChatHistory(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error while updating the recipes." }]);
         } finally {
             setIsChatLoading(false);
         }

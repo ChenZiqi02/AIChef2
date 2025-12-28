@@ -38,7 +38,7 @@ async def search_recipe(request: QueryRequest):
 
     # 调用 Service 层
     # 注意：为了兼容旧代码，我们先看看 service 能不能返回列表
-    result = recipe_service.get_recipe_list_response(request.query, request.limit)
+    result = recipe_service.get_recipe_list_response(request.query, request.limit, request.refinement)
     
     # 404 处理
     if not result or not result.candidates:

@@ -1,80 +1,75 @@
-# 🥦 AIChef - Fridge Rescue Assistant
+# AIChef - Intelligent Recipe Assistant
 
-> **"Don't know what to cook with your leftovers? Let AI Chef save the day!"**
+AIChef is a Retrieval-Augmented Generation (RAG) system designed to transform basic ingredient lists into gourmet recipe recommendations. It combines a local vector database for accurate recipe retrieval with a Large Language Model (LLM) for personalized culinary advice.
 
-![App Demo](image_21c592.jpg)
+## Project Overview
 
-## 📖 Introduction
+Unlike traditional recipe search engines that rely solely on keyword matching, AIChef employs a semantic search approach to understand the culinary context of user queries. The system features a "Fine Dining" aesthetic and includes an interactive AI Chef Consultant capable of adapting recipes to user preferences (e.g., dietary restrictions, flavor adjustments) in real-time.
 
-**AIChef** is an intelligent cooking assistant powered by **RAG (Retrieval-Augmented Generation)** technology. Unlike traditional recipe search engines, AIChef focuses on the **"Fridge Rescue"** scenario.
+## Key Features
 
-Users simply input the ingredients currently available in their fridge (e.g., *"I only have half an onion and two eggs"*). The system will:
-1.  **Retrieve**: Search through a local vector database (ChromaDB) containing 10,000+ recipes to find the most relevant culinary inspirations.
-2.  **Generate**: Use a Large Language Model (LLM) to act as a creative chef, teaching users how to adapt existing recipes to their limited ingredients—turning "leftovers" into delicious meals.
+### 1. Smart Retrieval & Deduplication
+- **Vector Search**: utilizes ChromaDB for semantic retrieval from a dataset of over 10,000 recipes.
+- **Auto-Deduplication**: Implements a similarity-based filtering mechanism (using `difflib`) to remove duplicate or highly similar recipe variants from search results.
+- **Dynamic Candidate Expansion**: Automatically expands the search range (fetching 3x the requested limit) to ensure a full set of distinct recipes is returned after filtering.
 
-## ✨ Key Features
+### 2. Context-Aware Refinement
+- **Interactive Chat**: Users can refine search results through natural language in the chat interface (e.g., "make it spicy", "I don't have an oven").
+- **Automatic Query Optimization**: The backend uses an LLM to rewrite search queries based on user feedback, instantly refreshing the recipe list to match the new context.
+- **Real-time Updates**: The frontend UI is tightly integrated with the backend search logic, allowing for seamless updates without page reloads.
 
-* **🥗 Smart Ingredient Matching**: Uses semantic search to understand ingredients (e.g., suggesting chicken if pork is missing).
-* **💡 Adaptive Cooking Instructions**: The AI doesn't just copy-paste recipes; it intelligently modifies steps based on what you actually have.
-* **⚡ Fast Local Retrieval**: Built on ChromaDB and BAAI Embeddings for millisecond-level response times.
-* **💬 Interactive UI**: A clean, chat-based interface built with React, featuring streaming responses and recipe citations.
-* **🔌 Flexible LLM Support**: Compatible with any OpenAI-style API (SiliconFlow Qwen, DeepSeek, Google Gemini, etc.).
+### 3. AI Consultant
+- **Personality**: The AI acts as a professional and humorous chef consultant.
+- **Logic Validation**: Capable of identifying and playfully rejecting "dark cuisine" combinations (e.g., incompatible ingredients) while suggesting rational alternatives.
+- **Reranking & Commentary**: The AI analyzes retrieved recipes to provide a summarized recommendation or specific advice on ingredient usage.
 
-## 🛠 Tech Stack
+## Technical Architecture
 
-* **Frontend**: React, Node, HTML
-* **Backend Logic**: Python, LangChain
-* **Vector Database**: ChromaDB, FAISS
-* **Embedding Model**: BAAI/bge-small-zh-v1.5 (HuggingFace)
-* **LLM**: OpenAI-compatible APIs (SiliconFlow, DeepSeek, Google Gemini)
+### Tech Stack
+- **Frontend**: React 18, Vite, TypeScript, Tailwind CSS
+- **Backend**: FastAPI (Python), Uvicorn
+- **AI/LLM**: Support for OpenAI-compatible APIs (SiliconFlow, DeepSeek), LangChain
+- **Database**: ChromaDB (Vector Store)
+- **Embeddings**: BAAI/bge-small-zh-v1.5 (Sentence Transformers)
 
-## 🚀 Quick Start
+### System Design
+1.  **Ingestion**: Recipe data is processed and embedded into ChromaDB.
+2.  **Query Processing**: User queries are analyzed and optionally rewritten by the LLM.
+3.  **Retrieval**: The system performs a similarity search in the vector database.
+4.  **Generation**: Retrieved documents are passed to the LLM to generate a contextual response or recommendation.
+5.  **Performance**: Frontend caching mechanisms ensure instant navigation between search results and details.
 
-### 1. Prerequisites
+## Quick Start
 
-Ensure you have Python 3.10+ installed.
+### Prerequisites
+- Python 3.10+
+- Node.js & npm
 
-```bash
-### 2. Configuration
-
-Create a `.env` file in the root directory:
+### Configuration
+Create a `.env` file in the `AIChef/` directory with your API credentials:
 
 ```env
-GEMINI_API_KEY=your_api_key_here
+SILICONFLOW_API_KEY=your_api_key
+SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
+SILICONFLOW_MODEL_NAME=deepseek-ai/DeepSeek-V3
 ```
 
-### 3. Startup (Two Terminals)
+### Running the Application
 
-**Terminal 1: Start Backend**
-```bash
-python run.py
-# Server starts at http://127.0.0.1:8000
-```
+1. **Start Backend Server**
+   ```bash
+   python AIChef/run.py
+   # Server listens on http://0.0.0.0:8000
+   ```
 
-**Terminal 2: Start Frontend**
-```bash
-cd frontend
-npm install  # First time only
-npm run dev
-# App opens at http://127.0.0.1:5173
-```
+2. **Start Frontend Client**
+   ```bash
+   cd AIChef/frontend
+   npm install
+   npm run dev
+   # Application accessible at http://localhost:5173
+   ```
 
-## 🎮 How to Use
-
-1.  **Open the App**: Visit `http://127.0.0.1:5173` in your browser.
-2.  **Home Page**: Admire the fine dining aesthetic. Enter ingredients (e.g., "Tomato, Egg") in the search bar or click a category icon.
-3.  **Consultant**: Click "Consult". The AI will analyze your ingredients.
-4.  **Results & Chat**: 
-    - You will see a list of curated recipes.
-    - **AI Consultant**: At the top, the AI (Gemini 2.0) will give a humorous, personalized recommendation.
-    - **Interactive Chat**: Type in the chat box to ask follow-up questions (e.g., "I don't eat spicy food", "How do I prep the shrimp?").
-5.  **View Details**: Click any recipe card to see step-by-step instructions.
-6.  **My Collection**: Click the "Heart" icon on any recipe to save it to your favorites.
-
-## 📝 Troubleshooting
-
-- **429 Resource Exhausted**: The system will automatically retry or you can wait a moment. (We prioritize the smarter Gemini 2.0 model).
-- **Blank Page**: Ensure you are running the frontend on `localhost` (127.0.0.1) to avoid CORS issues.
-
----
-*Bon Appétit!* 👨‍🍳
+## Development Reference
+- **API Documentation**: Available at `http://127.0.0.1:8000/docs` when the backend is running.
+- **Architecture**: See `TECHNICAL_ARCHITECTURE.md` (in Chinese) for a deep dive into the system design.
