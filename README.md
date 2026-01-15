@@ -23,6 +23,11 @@ Unlike traditional recipe search engines that rely solely on keyword matching, A
 - **Logic Validation**: Capable of identifying and playfully rejecting "dark cuisine" combinations (e.g., incompatible ingredients) while suggesting rational alternatives.
 - **Reranking & Commentary**: The AI analyzes retrieved recipes to provide a summarized recommendation or specific advice on ingredient usage.
 
+### 4. Smart User System (New!)
+- **Multi-User Support**: Easily switch profiles (e.g. "Dad", "Mom") from the UI.
+- **Preference Memory**: The system remembers your dietary restrictions (e.g. "No peanuts") and automatically filters search results.
+- **Personalized Favorites**: Each user has their own independent collection of favorite recipes.
+
 ## Technical Architecture
 
 ### Tech Stack
@@ -54,7 +59,13 @@ SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
 SILICONFLOW_MODEL_NAME=deepseek-ai/DeepSeek-V3
 ```
 
-### Running the Application
+### Running the Application (One-Click)
+
+1.  **Simply double-click `start.bat`**.
+2.  The script will set up the environment and launch both services.
+3.  **Open your browser**: Visit **[http://localhost:5173](http://localhost:5173)** to start using AIChef.
+
+### Running Manually (Advanced)
 
 1. **Start Backend Server**
    ```bash

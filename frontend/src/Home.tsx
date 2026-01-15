@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Beef, Fish, Carrot, Coffee, ChefHat, Heart } from 'lucide-react';
+import { UserSwitch } from './components/UserSwitch';
 
 const HomePage = () => {
     const [query, setQuery] = useState('');
@@ -24,8 +25,8 @@ const HomePage = () => {
         <div className="min-h-screen bg-stone-50 font-sans selection:bg-orange-100 selection:text-orange-900">
             {/* Navigation */}
             <nav className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10">
-                <div className="flex items-center gap-2 opacity-0 pointer-events-none md:opacity-100">
-                    {/* Placeholder for balance */}
+                <div className="flex items-center gap-2">
+                    <UserSwitch align="left" />
                 </div>
                 <button
                     onClick={() => navigate('/favorites')}

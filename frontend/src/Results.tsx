@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './lib/api'; // Use our custom api client
 import { ArrowLeft, Clock, Gauge, ChefHat, Heart } from 'lucide-react';
+import { UserSwitch } from './components/UserSwitch';
 import type { Recipe } from './types';
 
 const ResultsPage = () => {
@@ -28,10 +29,13 @@ const ResultsPage = () => {
         setIsChatLoading(true);
 
         try {
-             // 2. Call Search API with Refinement
-             // We use the original 'query' from the URL, and use the chat text as 'refinement'
-             // This fulfills the user's request to "refresh recipes" based on chat input.
-            const res = await axios.post('/api/search', {
+            // 2. Call Search API with Refinement
+            // We use the original 'query' from the URL, and use the chat text as 'refinement'
+            // This fulfills the user's request to "refresh recipes" based on chat input.
+            // 2. Call Search API with Refinement
+            // We use the original 'query' from the URL, and use the chat text as 'refinement'
+            // This fulfills the user's request to "refresh recipes" based on chat input.
+            const res = await api.post('/api/search', {
                 query: query,
                 limit: 5,
                 refinement: text
@@ -45,7 +49,7 @@ const ResultsPage = () => {
             // 4. Add AI response to chat
             const reply = res.data.ai_message || "Recipes updated based on your feedback.";
             setChatHistory(prev => [...prev, { role: 'assistant', content: reply }]);
-            
+
         } catch (err) {
             console.error(err);
             setChatHistory(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error while updating the recipes." }]);
@@ -81,7 +85,7 @@ const ResultsPage = () => {
             setError('');
 
             try {
-                const res = await axios.post('/api/search', { query, limit: 5 });
+                const res = await api.post('/api/search', { query, limit: 5 });
 
                 // Save to Cache
                 sessionStorage.setItem(cacheKey, JSON.stringify(res.data));
@@ -120,7 +124,9 @@ const ResultsPage = () => {
                     <h1 className="text-lg font-semibold text-slate-800">
                         Results for "<span className="text-primary">{query}</span>"
                     </h1>
-                    <div className="w-10" /> {/* Spacer */}
+                    <div className="flex items-center gap-4">
+                        <UserSwitch />
+                    </div>
                 </div>
             </header>
 

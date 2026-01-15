@@ -11,10 +11,14 @@
 - **图标库**: Lucide React (专业烹饪图标)
 - **状态管理**: React Hooks (`useState`, `useEffect`) + SessionStorage (本地缓存)
 - **路由**: React Router DOM v6
-- **网络请求**: Axios
+- **路由**: React Router DOM v6
+- **网络请求**: Axios (封装了自动注入 `X-Username` Header 的拦截器)
+- **多用户管理**: React Context API (`UserContext`) 实现全局用户切换
 
 ### 后端 (Backend)
 - **框架**: FastAPI (Python 3.10+)
+- **ORM**: SQLAlchemy
+- **关系型数据库**: SQLite (`data/users.db`) - 用于存储用户信息和偏好
 - **服务器**: Uvicorn (ASGI)
 - **API 风格**: RESTful JSON API
 
@@ -42,7 +46,13 @@
 - **个性化点评**: AI 根据当前检索到的菜谱列表生成开场白。
 - **黑暗料理过滤**: 对离谱的食材搭配（如“巧克力+蒜”）进行幽默吐槽并拒绝推荐。
 
-### 3.4 性能优化
+### 3.4 个性化用户系统 (User System)
+- **多用户支持**: 前端支持用户身份切换 (Dad/Mom/Kid)，通过 `X-Username` 请求头实现上下文隔离。
+- **自动注册**: 后端采用“自动推断”机制，如果请求头中的用户不存在，会自动在 SQLite 数据库中创建新用户，无需繁琐注册流程。
+- **偏好过滤**: 用户的忌口（如“不吃香菜”）会存储在 `users.db`。检索系统在返回结果前，会读取当前用户的偏好配置，强制过滤掉包含忌口食材的菜谱 (Hard Filter)。
+- **收藏夹隔离**: 每个用户的收藏列表 (Favorites) 相互独立，存储时通过 Namespaced Key (e.g. `aichef_favorites_Mom`) 进行物理隔离。
+
+### 3.5 性能优化
 - **前端缓存**: 使用 `sessionStorage` 缓存搜索结果，实现详情页返回时的**秒级加载 (Instant Load)**。
 - **异步处理**: 后端 API 采用 `async/await`，支持高并发访问。
 
@@ -53,9 +63,11 @@ AIChef/
 ├── app/
 │   ├── main.py            # FastAPI 入口与路由定义
 │   ├── services.py        # 核心业务逻辑 (去重、AI 交互、搜索优化)
-│   └── models.py          # Pydantic 数据模型定义
+│   ├── models.py          # Pydantic 数据模型定义 (API 接口)
+│   └── sql_models.py      # SQLAlchemy 数据库模型 (User 表结构)
 ├── core/
 │   ├── config.py          # 环境变量配置
+│   ├── database.py        # SQLite 数据库连接管理
 │   ├── generator.py       # LLM 生成逻辑封装
 │   ├── retriever.py       # 向量检索核心代码
 │   └── ingest.py          # 数据入库脚本
@@ -72,9 +84,17 @@ AIChef/
 └── run.py                 # 项目统一启动脚本
 ```
 
-## 5. 开发工作流 (Development Workflow)
-1.  **启动后端**: `python AIChef/run.py` (运行于 8000 端口)
-2.  **启动前端**: 进入 frontend 目录运行 `npm run dev` (运行于 5173 端口)
+## 5. 开发工作流与部署 (Workflow & Deployment)
+### 快速启动 (Quick Start)
+- **Windows 一键启动**: 直接运行根目录下的 `start.bat`。该脚本会自动：
+    1. 检查并创建 Python 虚拟环境。
+    2. 安装后端依赖 (`requirements.txt`)。
+    3. 安装前端依赖 (`npm install`)。
+    4. 同时启动后端 (8000) 和前端 (5173)。
+
+### 手动开发
+1.  **启动后端**: `python AIChef/run.py`
+2.  **启动前端**: 进入 frontend 目录运行 `npm run dev`
 3.  **环境配置**: 依赖 `.env` 文件中的 `SILICONFLOW_API_KEY` 等配置。
 
 ## 6. 技术路线总结 (Roadmap Summary)
@@ -83,3 +103,4 @@ AIChef/
 - **阶段三 (当前)**: 
     - 强化后端逻辑，增加**去重**与**多轮对话意图理解**。
     - 实现前端与后端的深层联动，让 Chat 不仅仅是聊天，更能直接控制数据展示。
+    - **新增**: 引入轻量级用户系统，支持多用户切换与偏好记忆。

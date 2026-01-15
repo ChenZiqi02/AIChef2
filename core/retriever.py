@@ -69,9 +69,12 @@ class VectorDBManager:
 #     return filtered_results
 # ... (前面的引用不变)
 
-def retrieve_docs(query: str, top_k: int = 4, score_threshold: float = 1.0):
+# ... (前面的引用不变)
+
+def retrieve_docs(query: str, top_k: int = 4, score_threshold: float = 1.0, preferences: dict = None):
     """
     检索核心函数
+    :param preferences: 用户偏好字典，例如 {"dislikes": ["香菜", "辣"]}
     """
     db = VectorDBManager.get_vector_store()
     if not db:
@@ -101,4 +104,30 @@ def retrieve_docs(query: str, top_k: int = 4, score_threshold: float = 1.0):
                 "score": score
             })
             
+    # --- 后置过滤 (Post-Retrieval Filtering) based on User Preferences ---
+    if preferences:
+        final_results = []
+        dislikes = preferences.get("dislikes", [])
+        allergies = preferences.get("allergies", [])
+        
+        # 将不喜欢和过敏源合并检查
+        avoid_list = [x.lower() for x in (dislikes + allergies) if x]
+        
+        if avoid_list:
+            print(f"🛑 [Retriever] 正在过滤用户忌口: {avoid_list}")
+            for res in filtered_results:
+                # 检查菜品名称、标签和内容是否包含忌口词
+                text_to_check = (res['name'] + str(res['tags']) + res['content']).lower()
+                
+                is_safe = True
+                for word in avoid_list:
+                    if word in text_to_check:
+                        print(f"   -> 剔除 '{res['name']}' (包含忌口: {word})")
+                        is_safe = False
+                        break
+                
+                if is_safe:
+                    final_results.append(res)
+            return final_results
+
     return filtered_results

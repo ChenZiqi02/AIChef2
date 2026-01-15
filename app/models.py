@@ -6,6 +6,9 @@ class QueryRequest(BaseModel):
     query: str
     limit: int = 5
     refinement: Optional[str] = None # 用户在聊天框补充的改进意见
+    
+class UserProfile(BaseModel):
+    preferences: Optional[dict] = None # e.g. {"allergies": [], "dislikes": []}
 
 # --- 响应模型 (完全对应前端 UI) ---
 

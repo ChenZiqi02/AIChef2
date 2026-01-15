@@ -44,19 +44,24 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
+// ... imports
+import { UserProvider } from './context/UserContext';
+
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
-        <Suspense fallback={<div className="p-10 text-center">Loading Components...</div>}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/results" element={<ResultsPage />} />
-            <Route path="/recipe/:id" element={<RecipeDetail />} />
-            <Route path="/favorites" element={<FavoritesPage />} />
-          </Routes>
-        </Suspense>
-      </Router>
+      <UserProvider>
+        <Router>
+          <Suspense fallback={<div className="p-10 text-center">Loading Components...</div>}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/results" element={<ResultsPage />} />
+              <Route path="/recipe/:id" element={<RecipeDetail />} />
+              <Route path="/favorites" element={<FavoritesPage />} />
+            </Routes>
+          </Suspense>
+        </Router>
+      </UserProvider>
     </ErrorBoundary>
   );
 }

@@ -75,19 +75,20 @@ class RecipeService:
             print(f"⚠️ Query optimization failed: {e}")
             return query
 
-    def get_recipe_list_response(self, query: str, limit: int = 5, refinement: str = None) -> Optional[RecipeListResponse]:
+    def get_recipe_list_response(self, query: str, limit: int = 5, refinement: str = None, preferences: dict = None) -> Optional[RecipeListResponse]:
         """
-        获取多个菜谱推荐列表 (支持去重 + 上下文改进)
+        获取多个菜谱推荐列表 (支持去重 + 上下文改进 + 用户偏好过滤)
         """
         # 1. 如果有改进意见，先优化搜索词
         search_query = query
         if refinement:
             search_query = self._optimize_query(query, refinement)
             
-        print(f"🔍 [Service] 执行搜索: {search_query}, 目标数量: {limit}, 原始Query: {query}")
+        print(f"🔍 [Service] 执行搜索: {search_query}, 目标数量: {limit}, 原始Query: {query}, 偏好: {preferences}")
         
         # 2. 扩大召回 (为了去重，且保证数量够，我们取 3 倍)
-        candidates = retrieve_docs(search_query, top_k=limit * 3)
+        # 此时传入 user preferences 进行底层过滤
+        candidates = retrieve_docs(search_query, top_k=limit * 3, preferences=preferences)
         if not candidates:
             # 如果优化后的词搜不到，尝试回退到原始词
             if search_query != query:

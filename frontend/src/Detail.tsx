@@ -3,6 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Flame, Heart, Share2, ChevronRight, ChefHat } from 'lucide-react';
 import type { Recipe } from './types';
 import { cn } from './lib/utils';
+import { useUser } from './context/UserContext';
+import { getNamespacedKey } from './lib/storage';
 
 const RecipeDetail = () => {
     const navigate = useNavigate();
@@ -12,23 +14,28 @@ const RecipeDetail = () => {
     const recipe = location.state?.recipe as Recipe;
 
     const [isFavorite, setIsFavorite] = useState(false);
+    const { username } = useUser();
 
     useEffect(() => {
         window.scrollTo(0, 0);
         // Initialize isFavorite state based on localStorage
         if (recipe?.recipe_id) {
-            const favIds = JSON.parse(localStorage.getItem('aichef_favorites') || '[]');
+            const favKey = getNamespacedKey('aichef_favorites', username);
+            const favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
             setIsFavorite(favIds.includes(recipe.recipe_id));
         }
-    }, [recipe?.recipe_id]);
+    }, [recipe?.recipe_id, username]);
 
     const toggleFavorite = () => {
         // 1. Manage List of IDs
-        const favIds = JSON.parse(localStorage.getItem('aichef_favorites') || '[]');
+        const favKey = getNamespacedKey('aichef_favorites', username);
+        const mapKey = getNamespacedKey('aichef_saved_recipes', username);
+
+        const favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
         let newFavIds;
 
         // 2. Manage Recipe Objects Map (Data Source for Favorites Page)
-        const savedRecipes = JSON.parse(localStorage.getItem('aichef_saved_recipes') || '{}');
+        const savedRecipes = JSON.parse(localStorage.getItem(mapKey) || '{}');
 
         if (isFavorite) {
             newFavIds = favIds.filter((fid: string) => fid !== recipe.recipe_id);
@@ -42,8 +49,8 @@ const RecipeDetail = () => {
             savedRecipes[recipe.recipe_id] = recipe;
         }
 
-        localStorage.setItem('aichef_favorites', JSON.stringify(newFavIds));
-        localStorage.setItem('aichef_saved_recipes', JSON.stringify(savedRecipes));
+        localStorage.setItem(favKey, JSON.stringify(newFavIds));
+        localStorage.setItem(mapKey, JSON.stringify(savedRecipes));
         setIsFavorite(!isFavorite);
     };
 

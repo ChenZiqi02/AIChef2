@@ -2,16 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Gauge, Heart, ChefHat } from 'lucide-react';
 import type { Recipe } from './types';
+import { useUser } from './context/UserContext';
+import { getNamespacedKey } from './lib/storage';
 import axios from 'axios';
 
 const FavoritesPage = () => {
     const navigate = useNavigate();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(true);
+    const { username } = useUser();
 
     useEffect(() => {
         const loadFavorites = async () => {
-            const favIds = JSON.parse(localStorage.getItem('aichef_favorites') || '[]');
+            const favKey = getNamespacedKey('aichef_favorites', username);
+            const savedMapKey = getNamespacedKey('aichef_saved_recipes', username);
+
+            const favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
             if (favIds.length === 0) {
                 setRecipes([]);
                 setLoading(false);
@@ -38,7 +44,9 @@ const FavoritesPage = () => {
                 // ALTERNATIVE: Since we want a "high end" experience, let's assume valid data.
                 // I'll update Detail.tsx to save the WHOLE recipe object to 'aichef_saved_recipes' map.
 
-                const savedMap = JSON.parse(localStorage.getItem('aichef_saved_recipes') || '{}');
+                // I'll update Detail.tsx to save the WHOLE recipe object to 'aichef_saved_recipes' map.
+
+                const savedMap = JSON.parse(localStorage.getItem(savedMapKey) || '{}');
                 const loadedRecipes = favIds.map((id: string) => savedMap[id]).filter(Boolean);
                 setRecipes(loadedRecipes);
 
