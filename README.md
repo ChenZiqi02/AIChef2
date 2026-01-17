@@ -1,86 +1,73 @@
 # AIChef - Intelligent Recipe Assistant
 
-AIChef is a Retrieval-Augmented Generation (RAG) system designed to transform basic ingredient lists into gourmet recipe recommendations. It combines a local vector database for accurate recipe retrieval with a Large Language Model (LLM) for personalized culinary advice.
+AIChef is a Retrieval-Augmented Generation (RAG) system that combines vector search with a Large Language Model (LLM) to provide personalized, context-aware recipe recommendations.
 
-## Project Overview
+## Technical Summary
 
-Unlike traditional recipe search engines that rely solely on keyword matching, AIChef employs a semantic search approach to understand the culinary context of user queries. The system features a "Fine Dining" aesthetic and includes an interactive AI Chef Consultant capable of adapting recipes to user preferences (e.g., dietary restrictions, flavor adjustments) in real-time.
-
-## Key Features
-
-### 1. Smart Retrieval & Deduplication
-- **Vector Search**: utilizes ChromaDB for semantic retrieval from a dataset of over 10,000 recipes.
-- **Auto-Deduplication**: Implements a similarity-based filtering mechanism (using `difflib`) to remove duplicate or highly similar recipe variants from search results.
-- **Dynamic Candidate Expansion**: Automatically expands the search range (fetching 3x the requested limit) to ensure a full set of distinct recipes is returned after filtering.
-
-### 2. Context-Aware Refinement
-- **Interactive Chat**: Users can refine search results through natural language in the chat interface (e.g., "make it spicy", "I don't have an oven").
-- **Automatic Query Optimization**: The backend uses an LLM to rewrite search queries based on user feedback, instantly refreshing the recipe list to match the new context.
-- **Real-time Updates**: The frontend UI is tightly integrated with the backend search logic, allowing for seamless updates without page reloads.
-
-### 3. AI Consultant
-- **Personality**: The AI acts as a professional and humorous chef consultant.
-- **Logic Validation**: Capable of identifying and playfully rejecting "dark cuisine" combinations (e.g., incompatible ingredients) while suggesting rational alternatives.
-- **Reranking & Commentary**: The AI analyzes retrieved recipes to provide a summarized recommendation or specific advice on ingredient usage.
-
-### 4. Smart User System (New!)
-- **Multi-User Support**: Easily switch profiles (e.g. "Dad", "Mom") from the UI.
-- **Preference Memory**: The system remembers your dietary restrictions (e.g. "No peanuts") and automatically filters search results.
-- **Personalized Favorites**: Each user has their own independent collection of favorite recipes.
-
-## Technical Architecture
-
-### Tech Stack
 - **Frontend**: React 18, Vite, TypeScript, Tailwind CSS
-- **Backend**: FastAPI (Python), Uvicorn
-- **AI/LLM**: Support for OpenAI-compatible APIs (SiliconFlow, DeepSeek), LangChain
-- **Database**: ChromaDB (Vector Store)
-- **Embeddings**: BAAI/bge-small-zh-v1.5 (Sentence Transformers)
+- **Backend**: FastAPI, Uvicorn
+- **AI/RAG**: ChromaDB (Vector Store), OpenAI-compatible APIs (SiliconFlow/DeepSeek)
+- **Key Capabilities**: Semantic search, recipe deduplication, context-aware chat, and user preference tracking.
 
-### System Design
-1.  **Ingestion**: Recipe data is processed and embedded into ChromaDB.
-2.  **Query Processing**: User queries are analyzed and optionally rewritten by the LLM.
-3.  **Retrieval**: The system performs a similarity search in the vector database.
-4.  **Generation**: Retrieved documents are passed to the LLM to generate a contextual response or recommendation.
-5.  **Performance**: Frontend caching mechanisms ensure instant navigation between search results and details.
-
-## Quick Start
+## Installation & Setup
 
 ### Prerequisites
-- Python 3.10+
-- Node.js & npm
 
-### Configuration
-Create a `.env` file in the `AIChef/` directory with your API credentials:
+- **Python**: 3.10 or higher
+- **Node.js**: **Version 18** (Crucial for frontend compatibility)
+- **Package Manager**: npm (included with Node.js)
 
-```env
-SILICONFLOW_API_KEY=your_api_key
-SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
-SILICONFLOW_MODEL_NAME=deepseek-ai/DeepSeek-V3
+### 1. Environment Setup (Node.js v18)
+
+This project requires **Node.js version 18**. If you are using `nvm` (Node Version Manager), run the following commands in your terminal to ensure you are on the correct version:
+
+```bash
+# Install Node.js v18
+nvm install 18
+
+# Switch to Node.js v18
+nvm use 18
+
+# Verify version (should output v18.x.x)
+node -v
 ```
 
-### Running the Application (One-Click)
+> **Note**: If `nvm use 18` fails on Windows, try running your terminal as Administrator.
 
-1.  **Simply double-click `start.bat`**.
-2.  The script will set up the environment and launch both services.
-3.  **Open your browser**: Visit **[http://localhost:5173](http://localhost:5173)** to start using AIChef.
+### 2. Backend Setup
 
-### Running Manually (Advanced)
+1.  Create a `.env` file in the `AIChef` directory with your API credentials:
+    ```env
+    SILICONFLOW_API_KEY=your_api_key
+    SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
+    SILICONFLOW_MODEL_NAME=deepseek-ai/DeepSeek-V3
+    ```
 
-1. **Start Backend Server**
-   ```bash
-   python AIChef/run.py
-   # Server listens on http://0.0.0.0:8000
-   ```
+2.  Run the backend:
+    ```bash
+    # From project root
+    python AIChef/run.py
+    ```
 
-2. **Start Frontend Client**
-   ```bash
-   cd AIChef/frontend
-   npm install
-   npm run dev
-   # Application accessible at http://localhost:5173
-   ```
+### 3. Frontend Setup
 
-## Development Reference
-- **API Documentation**: Available at `http://127.0.0.1:8000/docs` when the backend is running.
-- **Architecture**: See `TECHNICAL_ARCHITECTURE.md` (in Chinese) for a deep dive into the system design.
+1.  Navigate to the frontend directory:
+    ```bash
+    cd AIChef/frontend
+    ```
+
+2.  Install dependencies and start the server:
+    ```bash
+    # Ensure you are using Node 18
+    npm install
+    npm run dev
+    ```
+
+3.  Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## Quick Start (Windows)
+
+A `start.bat` script is included for convenience. Ensure you have installed the prerequisites above first.
+
+1.  Double-click `start.bat`.
+2.  The script will launch both the backend and frontend services.
