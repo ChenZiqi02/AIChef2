@@ -51,7 +51,7 @@ For Mac/Linux users or those who prefer the command line.
     SILICONFLOW_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
     # Cost-effective model for chat
-    SILICONFLOW_MODEL_NAME=Qwen/Qwen2.5-7B-Instruct
+    SILICONFLOW_MODEL_NAME=deepseek-ai/DeepSeek-V3.2
     
     # Image Generation Model
     SILICONFLOW_IMAGE_MODEL=Kwai-Kolors/Kolors
@@ -160,7 +160,7 @@ AIChef 是一个基于 **RAG (检索增强生成)** 技术构建的智能菜谱�
     SILICONFLOW_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     SILICONFLOW_BASE_URL=https://api.siliconflow.cn/v1
     # 免费/低成本对话模型
-    SILICONFLOW_MODEL_NAME=Qwen/Qwen2.5-7B-Instruct
+    SILICONFLOW_MODEL_NAME=deepseek-ai/DeepSeek-V3.2
     
     # 生图模型配置 (免费)
     SILICONFLOW_IMAGE_MODEL=Kwai-Kolors/Kolors
