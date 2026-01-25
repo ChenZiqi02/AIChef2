@@ -3,7 +3,7 @@
 [English](#english) | [中文说明](#chinese)
 
 <a name="english"></a>
-## English Documentation
+## English Documentation - test
 
 AIChef is an intelligent recipe recommendation system built with **RAG (Retrieval-Augmented Generation)** technology. It combines local vector search with Large Language Models (DeepSeek/Qwen) to provide personalized, context-aware cooking advice.
 
@@ -11,11 +11,11 @@ AIChef is an intelligent recipe recommendation system built with **RAG (Retrieva
 
 Before starting, please ensure your system meets the following requirements:
 
-1.  **Node.js**: **Version 18** .
+1.  **Node.js**: **Version 18**.
     *   Verify with: `node -v`
 2.  **Python**: **Version 3.10+**.
     *   Verify with: `python --version`
-
+3.  **Git**: (Optional) For cloning the repository.
 
 ---
 
@@ -29,7 +29,7 @@ If you are on Windows, we provide an automated script for quick startup.
     *   Create a Python virtual environment and install dependencies.
     *   Install Node.js dependencies for the frontend.
     *   **Simultaneously launch** the Backend (port 8000) and Frontend (port 5173).
-4.  **Access**: Open the website in your browser, like `http://localhost:5173`.
+4.  **Access**: Open the frontend port web page, e.g. `http://localhost:5173`.
 
 ---
 
@@ -120,10 +120,11 @@ AIChef 是一个基于 **RAG (检索增强生成)** 技术构建的智能菜谱�
 
 在开始之前，请确保您的电脑已经安装了以下软件：
 
-1.  **Node.js**: **版本 18** 
+1.  **Node.js**: **版本 18**。
     *   验证命令: `node -v`
 2.  **Python**: **版本 3.10+**。
     *   验证命令: `python --version`
+3.  **Git**: (可选) 用于克隆代码仓库。
 
 ---
 
@@ -137,7 +138,7 @@ AIChef 是一个基于 **RAG (检索增强生成)** 技术构建的智能菜谱�
     *   创建 Python 虚拟环境并安装依赖。
     *   进入前端目录安装 Node 依赖。
     *   **同时启动** 后端 (8000端口) 和 前端 (5173端口)。
-4.  **访问**: 打开浏览器访问前端网页，如 `http://localhost:5173`。
+4.  **访问**: 浏览器打开前端端口，如 `http://localhost:5173`。
 
 ---
 
@@ -196,7 +197,7 @@ AIChef 是一个基于 **RAG (检索增强生成)** 技术构建的智能菜谱�
     ```
 
 5.  **访问项目**:
-    打开浏览器访问前端网页，如 `http://localhost:5173`。
+    打开浏览器访问 `http://localhost:5173`。
 
 ---
 
